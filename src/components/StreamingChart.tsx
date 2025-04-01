@@ -74,7 +74,13 @@ const StreamingChart: React.FC<StreamingChartProps> = ({
               boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
               fontSize: isMobile ? '12px' : '14px'
             }}
-            formatter={(value) => [`${value.toFixed(2)}%`, 'Value']}
+            formatter={(value) => {
+              // Check if value is a number before calling toFixed
+              const formattedValue = typeof value === 'number' 
+                ? `${value.toFixed(2)}%` 
+                : `${value}%`;
+              return [formattedValue, 'Value'];
+            }}
             labelFormatter={(time) => `Time: ${time}`}
           />
           {showLegend && <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12, paddingTop: 10 }} />}
