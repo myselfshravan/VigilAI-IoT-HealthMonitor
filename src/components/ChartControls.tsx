@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useMockData } from "./MockDataProvider";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   ChartLine,
   Play,
@@ -40,6 +40,12 @@ const ChartControls: React.FC<ChartControlsProps> = ({
   gradient,
   setGradient,
 }) => {
+  const STATUS_OPTIONS = [
+    { value: "1", label: "BPM" },
+    { value: "2", label: "Temp" },
+    { value: "3", label: "Accel" },
+    { value: "4", label: "ECG" },
+  ];
   const {
     isStreaming,
     toggleStreaming,
@@ -56,6 +62,19 @@ const ChartControls: React.FC<ChartControlsProps> = ({
 
   // Get the latest alert if any
   const latestAlert = data.length > 0 ? data[data.length - 1].Alert : null;
+  const currentStatus = data.length > 0 ? data[data.length - 1].STATUS : "1";
+
+  const handleStatusChange = (value: string) => {
+    if (value) {
+      fetch("https://auth-44578-default-rtdb.firebaseio.com/.json", {
+        method: "PATCH",
+        body: JSON.stringify({ STATUS: value }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    }
+  };
 
   return (
     <div className="w-full p-4 space-y-4 bg-background border rounded-lg shadow-sm">
@@ -82,6 +101,32 @@ const ChartControls: React.FC<ChartControlsProps> = ({
             </TabsTrigger>
           </TabsList>
         </Tabs>
+      </div>
+
+      <div className="w-full flex flex-col gap-3">
+        <Label className="text-sm font-medium text-gray-700">
+          Status Control
+        </Label>
+        <ToggleGroup
+          type="single"
+          value={currentStatus}
+          onValueChange={handleStatusChange}
+          className="flex gap-2"
+        >
+          {STATUS_OPTIONS.map((option) => (
+            <ToggleGroupItem
+              key={option.value}
+              value={option.value}
+              aria-label={option.label}
+              className="px-4 py-2 rounded-xl border text-sm font-medium transition-colors
+                   data-[state=on]:bg-primary data-[state=on]:text-white
+                   data-[state=on]:border-primary
+                   hover:bg-muted hover:text-black"
+            >
+              {option.label}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </div>
     </div>
   );
