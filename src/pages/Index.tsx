@@ -119,7 +119,7 @@ const Index = () => {
       </main>
 
       <footer className="bg-card p-4 text-center text-sm text-muted-foreground border-t">
-        <p>Health Monitoring System</p>
+        <p>Smart Health Monitoring System</p>
         <p>Developed by Shravan</p>
       </footer>
     </div>
