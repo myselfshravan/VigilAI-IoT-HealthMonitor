@@ -176,6 +176,7 @@ export const MockDataProvider: React.FC<MockDataProviderProps> = ({
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useMockData = () => {
   const context = useContext(MockDataContext);
   if (context === undefined) {
