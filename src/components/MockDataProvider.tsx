@@ -5,6 +5,40 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
+import { initializeApp } from "firebase/app";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  off,
+  DataSnapshot,
+} from "firebase/database";
+
+// Define the Firebase data structure
+interface FirebaseData {
+  BPM: number;
+  SPO2: number;
+  Temp: number;
+  Pressure: number;
+  Lat: number;
+  Long: number;
+  Compass: {
+    X: number;
+    Y: number;
+    Z: number;
+  };
+  Alert: string | null;
+  STATUS: string;
+}
+
+// Firebase configuration
+const firebaseConfig = {
+  databaseURL: "https://auth-44578-default-rtdb.firebaseio.com/",
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
 
 // Define our health monitoring data structure
 export interface HealthData {
@@ -53,93 +87,29 @@ interface MockDataProviderProps {
   children: ReactNode;
 }
 
-// Generate random value within a range
-const getRandomValue = (min: number, max: number, precision = 1) => {
-  return parseFloat((min + Math.random() * (max - min)).toFixed(precision));
-};
+// Function to create a health data record from Firebase snapshot
+const createHealthData = (snapshot: DataSnapshot): HealthData => {
+  const now = Date.now();
+  const val = (snapshot.val() || {}) as Partial<FirebaseData>;
 
-// Generate a random health data record
-const generateHealthData = (prevData?: HealthData): HealthData => {
-  // Base values
-  const baseData = prevData || {
-    BPM: 72,
-    SPO2: 98,
-    Temp: 36.5,
-    Pressure: 1000,
-    Compass: { X: 0, Y: 0, Z: 9.8 },
-  };
-
-  // Random fluctuations (smaller if we have previous data)
-  const factor = prevData ? 0.02 : 0.2;
-
-  // Generate an alert randomly (10% chance)
-  const alertTypes = [
-    null,
-    "Person Falling!",
-    "Low SPO2!",
-    "High BPM!",
-    "Low BPM!",
-  ];
-  const showAlert = Math.random() < 0.1;
-  const alertIndex = showAlert
-    ? Math.floor(Math.random() * (alertTypes.length - 1)) + 1
-    : 0;
+  // Check for fall condition
+  const isYAxisAbnormal = val.Compass?.Y > 3 || val.Compass?.Y < 1;
 
   return {
-    timestamp: Date.now(),
-    BPM: Math.max(
-      40,
-      Math.min(
-        180,
-        getRandomValue(
-          baseData.BPM * (1 - factor),
-          baseData.BPM * (1 + factor),
-          0
-        )
-      )
-    ),
-    SPO2: Math.max(
-      85,
-      Math.min(
-        100,
-        getRandomValue(
-          baseData.SPO2 * (1 - factor * 0.5),
-          baseData.SPO2 * (1 + factor * 0.1),
-          1
-        )
-      )
-    ),
-    Temp: Math.max(
-      35,
-      Math.min(
-        40,
-        getRandomValue(
-          baseData.Temp * (1 - factor * 0.1),
-          baseData.Temp * (1 + factor * 0.1),
-          1
-        )
-      )
-    ),
-    Pressure: Math.max(
-      980,
-      Math.min(
-        1020,
-        getRandomValue(
-          baseData.Pressure * (1 - factor * 0.01),
-          baseData.Pressure * (1 + factor * 0.01),
-          1
-        )
-      )
-    ),
-    Lat: getRandomValue(12.975, 12.985, 6),
-    Long: getRandomValue(77.755, 77.765, 6),
+    timestamp: now,
+    BPM: val.BPM || 80,
+    SPO2: val.SPO2 || 97,
+    Temp: val.Temp || 36.5,
+    Pressure: val.Pressure || 1000,
+    Lat: val.Lat || 0,
+    Long: val.Long || 0,
     Compass: {
-      X: getRandomValue(baseData.Compass.X - 0.1, baseData.Compass.X + 0.1, 2),
-      Y: getRandomValue(baseData.Compass.Y - 0.1, baseData.Compass.Y + 0.1, 2),
-      Z: getRandomValue(baseData.Compass.Z - 0.1, baseData.Compass.Z + 0.1, 2),
+      X: val.Compass?.X || 0,
+      Y: val.Compass?.Y || 2,
+      Z: val.Compass?.Z || 9.8,
     },
-    Alert: alertTypes[alertIndex],
-    STATUS: String(Math.floor(Math.random() * 5)),
+    Alert: isYAxisAbnormal ? "Person Falling!" : val.Alert || null,
+    STATUS: val.STATUS || "1",
     id: crypto.randomUUID(),
   };
 };
@@ -162,39 +132,25 @@ export const MockDataProvider: React.FC<MockDataProviderProps> = ({
   useEffect(() => {
     if (!isStreaming) return;
 
-    // Initialize with some data if empty
-    if (data.length === 0) {
-      const initialData: HealthData[] = [];
-      const now = Date.now();
+    const dataRef = ref(database, "/");
 
-      let prevData: HealthData | undefined = undefined;
-      for (let i = dataPoints - 1; i >= 0; i--) {
-        prevData = generateHealthData(prevData);
-        prevData.timestamp = now - i * updateInterval;
-        initialData.push(prevData);
-      }
-
-      setData(initialData);
-    }
-
-    const interval = setInterval(() => {
+    const handleData = (snapshot: DataSnapshot) => {
       setData((currentData) => {
-        // Remove oldest data point if we have reached the limit
         const newData =
           currentData.length >= dataPoints
             ? [...currentData.slice(1)]
             : [...currentData];
 
-        // Add new data point based on the last one
-        const lastData =
-          newData.length > 0 ? newData[newData.length - 1] : undefined;
-        newData.push(generateHealthData(lastData));
-
+        newData.push(createHealthData(snapshot));
         return newData;
       });
-    }, updateInterval);
+    };
 
-    return () => clearInterval(interval);
+    onValue(dataRef, handleData);
+
+    return () => {
+      off(dataRef, "value", handleData);
+    };
   }, [isStreaming, updateInterval, dataPoints]);
 
   const toggleStreaming = () => {
