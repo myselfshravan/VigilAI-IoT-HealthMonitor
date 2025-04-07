@@ -1,7 +1,7 @@
 
 import React, { useMemo } from "react";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import { useMockData, DataPoint } from "./MockDataProvider";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine } from "recharts";
+import { useMockData, HealthData } from "./MockDataProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface StreamingChartProps {
@@ -11,18 +11,60 @@ interface StreamingChartProps {
   gradient?: boolean;
 }
 
+// Define colors and thresholds for the different metrics
+const metricConfig = {
+  BPM: {
+    color: "#8B5CF6",
+    unit: "bpm",
+    label: "Heart Rate",
+    min: 40,
+    max: 180,
+    warning: { low: 50, high: 120 },
+    danger: { low: 40, high: 150 }
+  },
+  SPO2: {
+    color: "#2DD4BF",
+    unit: "%",
+    label: "Blood Oxygen",
+    min: 85,
+    max: 100,
+    warning: { low: 92, high: 100 },
+    danger: { low: 88, high: 100 }
+  },
+  Temp: {
+    color: "#F97316",
+    unit: "°C",
+    label: "Temperature",
+    min: 35,
+    max: 40,
+    warning: { low: 35.5, high: 37.8 },
+    danger: { low: 35, high: 38.5 }
+  },
+  Pressure: {
+    color: "#6366F1",
+    unit: "hPa",
+    label: "Pressure",
+    min: 980,
+    max: 1020,
+    warning: { low: 990, high: 1010 },
+    danger: { low: 985, high: 1015 }
+  }
+};
+
 const StreamingChart: React.FC<StreamingChartProps> = ({ 
   showGrid = true, 
   showLegend = true, 
   chartHeight = 300,
   gradient = true
 }) => {
-  const { data } = useMockData();
+  const { data, selectedMetric } = useMockData();
   const isMobile = useIsMobile();
+  
+  const metricDetails = metricConfig[selectedMetric];
   
   // Format the data for the chart
   const chartData = useMemo(() => {
-    return data.map((point: DataPoint) => ({
+    return data.map((point: HealthData) => ({
       ...point,
       formattedTime: new Date(point.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     }));
@@ -34,9 +76,9 @@ const StreamingChart: React.FC<StreamingChartProps> = ({
     
     return (
       <defs>
-        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
-          <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+        <linearGradient id={`color${selectedMetric}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor={metricDetails.color} stopOpacity={0.8}/>
+          <stop offset="95%" stopColor={metricDetails.color} stopOpacity={0}/>
         </linearGradient>
       </defs>
     );
@@ -44,6 +86,9 @@ const StreamingChart: React.FC<StreamingChartProps> = ({
 
   return (
     <div className="chart-container" style={{ height: `${chartHeight}px` }}>
+      <div className="p-2 text-center">
+        <h3 className="text-lg font-semibold">{metricDetails.label}</h3>
+      </div>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={chartData}
@@ -63,9 +108,10 @@ const StreamingChart: React.FC<StreamingChartProps> = ({
             tickCount={isMobile ? 3 : 5}
           />
           <YAxis 
-            domain={[0, 100]}
+            domain={[metricDetails.min, metricDetails.max]}
             tick={{ fontSize: isMobile ? 10 : 12 }}
-            width={isMobile ? 30 : 40} 
+            width={isMobile ? 30 : 40}
+            tickFormatter={(value) => `${value}`}
           />
           <Tooltip
             contentStyle={{ 
@@ -77,25 +123,32 @@ const StreamingChart: React.FC<StreamingChartProps> = ({
             formatter={(value) => {
               // Check if value is a number before calling toFixed
               const formattedValue = typeof value === 'number' 
-                ? `${value.toFixed(2)}%` 
-                : `${value}%`;
-              return [formattedValue, 'Value'];
+                ? `${value.toFixed(1)} ${metricDetails.unit}` 
+                : `${value} ${metricDetails.unit}`;
+              return [formattedValue, metricDetails.label];
             }}
             labelFormatter={(time) => `Time: ${time}`}
           />
           {showLegend && <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12, paddingTop: 10 }} />}
+          
+          {/* Add warning and danger reference lines */}
+          <ReferenceLine y={metricDetails.warning.low} stroke="#FCD34D" strokeDasharray="3 3" />
+          <ReferenceLine y={metricDetails.warning.high} stroke="#FCD34D" strokeDasharray="3 3" />
+          <ReferenceLine y={metricDetails.danger.low} stroke="#F87171" strokeDasharray="3 3" />
+          <ReferenceLine y={metricDetails.danger.high} stroke="#F87171" strokeDasharray="3 3" />
+          
           <Line
             type="monotone"
-            dataKey="value"
-            name="Signal Value"
-            stroke="#8B5CF6"
+            dataKey={selectedMetric}
+            name={metricDetails.label}
+            stroke={metricDetails.color}
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 6, fill: "#8B5CF6" }}
+            activeDot={{ r: 6, fill: metricDetails.color }}
             isAnimationActive={true}
             animationDuration={300}
             connectNulls={true}
-            fill={gradient ? "url(#colorValue)" : "none"}
+            fill={gradient ? `url(#color${selectedMetric})` : "none"}
           />
         </LineChart>
       </ResponsiveContainer>
