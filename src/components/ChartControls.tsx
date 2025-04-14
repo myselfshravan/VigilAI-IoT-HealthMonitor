@@ -104,7 +104,7 @@ const ChartControls: React.FC<ChartControlsProps> = ({
       </div>
 
       <div className="w-full flex flex-col gap-3">
-        <Label className="text-sm font-medium text-gray-700">
+        <Label className="text-sm font-medium text-gray-700 text-center">
           Status Control
         </Label>
         <ToggleGroup
