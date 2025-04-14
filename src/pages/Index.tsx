@@ -21,13 +21,13 @@ const VitalCard = ({
   icon: React.ElementType;
 }) => {
   return (
-    <Card className="h-full">
+    <Card className="h-full transition-transform duration-300 hover:scale-105">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <Icon className="h-4 w-4 text-muted-foreground animate-pulse" />
       </CardHeader>
       <CardContent>
-        <div className="text-xl font-bold">
+        <div className="text-xl font-bold transition-all duration-500">
           {value}
           {unit}
         </div>
