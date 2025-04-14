@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { MockDataProvider } from "@/components/MockDataProvider";
 import StreamingChart from "@/components/StreamingChart";
 import ChartControls from "@/components/ChartControls";
+import SensorData from "@/components/SensorData";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMockData } from "@/components/MockDataProvider";
@@ -96,6 +97,8 @@ const MonitoringDashboard = () => {
           gradient={gradient}
         />
       </div>
+
+      {latestData && <SensorData />}
     </div>
   );
 };
