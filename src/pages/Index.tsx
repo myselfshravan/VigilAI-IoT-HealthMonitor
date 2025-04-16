@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { MockDataProvider } from "@/components/MockDataProvider";
 import StreamingChart from "@/components/StreamingChart";
 import ChartControls from "@/components/ChartControls";
@@ -109,10 +110,20 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="bg-primary text-primary-foreground p-4 shadow-md">
-        <h1 className="text-xl font-bold">Health Monitoring Dashboard</h1>
-        <p className="text-sm opacity-80">
-          Real-time vital signs visualization
-        </p>
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <div>
+            <h1 className="text-xl font-bold">Health Monitoring Dashboard</h1>
+            <p className="text-sm opacity-80">
+              Real-time vital signs visualization
+            </p>
+          </div>
+          <Link 
+            to="/about" 
+            className="px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
+          >
+            About
+          </Link>
+        </div>
       </header>
 
       <main className="flex-1 p-4 max-w-7xl mx-auto w-full space-y-6">
