@@ -4,7 +4,6 @@ import React, {
   useState,
   useEffect,
   ReactNode,
-  useRef,
 } from "react";
 import { initializeApp } from "firebase/app";
 import {
@@ -14,12 +13,6 @@ import {
   off,
   DataSnapshot,
 } from "firebase/database";
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
 
 // Define the Firebase data structure
 interface FirebaseData {
@@ -46,7 +39,6 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
-const firestore = getFirestore(app);
 
 // Define our health monitoring data structure
 export interface HealthData {
@@ -65,7 +57,6 @@ export interface HealthData {
   Alert: string | null;
   STATUS: string;
   id: string;
-  savedAt?: ReturnType<typeof serverTimestamp> | null; // Optional field for Firestore server timestamp
 }
 
 interface MockDataContextType {
@@ -78,16 +69,14 @@ interface MockDataContextType {
   setDataPoints: (points: number) => void;
   selectedMetric: keyof Omit<
     HealthData,
-    "timestamp" | "id" | "Lat" | "Long" | "Compass" | "Alert" | "STATUS" | "savedAt"
+    "timestamp" | "id" | "Lat" | "Long" | "Compass" | "Alert" | "STATUS"
   >;
   setSelectedMetric: (
     metric: keyof Omit<
       HealthData,
-      "timestamp" | "id" | "Lat" | "Long" | "Compass" | "Alert" | "STATUS" | "savedAt"
+      "timestamp" | "id" | "Lat" | "Long" | "Compass" | "Alert" | "STATUS"
     >
   ) => void;
-  isSavingToFirestore: boolean;
-  toggleFirestoreSaving: () => void;
 }
 
 const MockDataContext = createContext<MockDataContextType | undefined>(
@@ -136,16 +125,9 @@ export const MockDataProvider: React.FC<MockDataProviderProps> = ({
     useState<
       keyof Omit<
         HealthData,
-        "timestamp" | "id" | "Lat" | "Long" | "Compass" | "Alert" | "STATUS" | "savedAt"
+        "timestamp" | "id" | "Lat" | "Long" | "Compass" | "Alert" | "STATUS"
       >
     >("BPM");
-  const [isSavingToFirestore, setIsSavingToFirestore] = useState(false);
-  const dataRef = useRef<HealthData[]>(data); // Ref to access latest data in effect
-
-  // Update ref whenever data changes
-  useEffect(() => {
-    dataRef.current = data;
-  }, [data]);
 
   useEffect(() => {
     if (!isStreaming) return;
@@ -171,32 +153,8 @@ export const MockDataProvider: React.FC<MockDataProviderProps> = ({
     };
   }, [isStreaming, updateInterval, dataPoints]);
 
-  // Effect to save data to Firestore when enabled
-  useEffect(() => {
-    if (!isSavingToFirestore || data.length === 0) return;
-
-    const latestDataPoint = data[data.length - 1];
-    const saveData = async () => {
-      try {
-        const docRef = await addDoc(collection(firestore, "healthDataReadings"), {
-          ...latestDataPoint,
-          savedAt: serverTimestamp(), // Add Firestore server timestamp
-        });
-        console.log("Document written with ID: ", docRef.id);
-      } catch (e) {
-        console.error("Error adding document: ", e);
-      }
-    };
-
-    saveData();
-  }, [data, isSavingToFirestore, firestore]); // Depend on data to trigger on new data points
-
   const toggleStreaming = () => {
     setIsStreaming((prev) => !prev);
-  };
-
-  const toggleFirestoreSaving = () => {
-    setIsSavingToFirestore((prev) => !prev);
   };
 
   const value = {
@@ -209,8 +167,6 @@ export const MockDataProvider: React.FC<MockDataProviderProps> = ({
     setDataPoints,
     selectedMetric,
     setSelectedMetric,
-    isSavingToFirestore,
-    toggleFirestoreSaving,
   };
 
   return (

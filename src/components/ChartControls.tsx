@@ -56,8 +56,6 @@ const ChartControls: React.FC<ChartControlsProps> = ({
     selectedMetric,
     setSelectedMetric,
     data,
-    isSavingToFirestore,
-    toggleFirestoreSaving,
   } = useMockData();
 
   const isMobile = useIsMobile();
@@ -129,17 +127,6 @@ const ChartControls: React.FC<ChartControlsProps> = ({
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      </div>
-
-      <div className="flex items-center justify-center space-x-2 pt-2">
-        <Switch
-          id="firestore-save"
-          checked={isSavingToFirestore}
-          onCheckedChange={toggleFirestoreSaving}
-        />
-        <Label htmlFor="firestore-save" className="text-sm font-medium">
-          Save Data to Cloud
-        </Label>
       </div>
     </div>
   );
