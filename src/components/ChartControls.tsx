@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useMockData } from "./MockDataProvider";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -6,6 +6,13 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ChartLine,
   Play,
@@ -15,9 +22,13 @@ import {
   Droplets,
   Thermometer,
   Gauge,
+  Database,
+  Clock,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { ToastAction } from "@/components/ui/toast";
+import { useToast } from "@/components/ui/use-toast";
 
 interface ChartControlsProps {
   showGrid: boolean;
@@ -56,9 +67,55 @@ const ChartControls: React.FC<ChartControlsProps> = ({
     selectedMetric,
     setSelectedMetric,
     data,
+    backupEnabled,
+    toggleBackup,
+    backupInterval,
+    setBackupInterval,
+    lastBackupTime,
   } = useMockData();
 
   const isMobile = useIsMobile();
+  const { toast } = useToast();
+
+  // Handle backup status events
+  useEffect(() => {
+    const handleBackupStatus = (
+      event: CustomEvent<{
+        type: "success" | "error";
+        title: string;
+        description: string;
+        action?: {
+          label: string;
+          onClick: () => void;
+        };
+      }>
+    ) => {
+      const { type, title, description, action } = event.detail;
+
+      toast({
+        title,
+        description,
+        variant: type === "success" ? "default" : "destructive",
+        action: action && (
+          <ToastAction altText={action.label} onClick={action.onClick}>
+            {action.label}
+          </ToastAction>
+        ),
+      });
+    };
+
+    window.addEventListener(
+      "backupStatus",
+      handleBackupStatus as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "backupStatus",
+        handleBackupStatus as EventListener
+      );
+    };
+  }, [toast]);
 
   // Get the latest alert if any
   const latestAlert = data.length > 0 ? data[data.length - 1].Alert : null;
@@ -104,6 +161,59 @@ const ChartControls: React.FC<ChartControlsProps> = ({
       </div>
 
       <div className="w-full flex flex-col gap-3">
+        <div className="flex items-center justify-between flex-col gap-2">
+          {backupEnabled && lastBackupTime && (
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Last backup: {new Date(lastBackupTime).toLocaleTimeString()}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={backupEnabled}
+                onCheckedChange={(enabled) => {
+                  toggleBackup();
+                  toast({
+                    title: enabled ? "Backup Enabled" : "Backup Disabled",
+                    description: enabled
+                      ? "Data will be backed up to Firestore automatically"
+                      : "Automatic backup has been disabled",
+                    duration: 3000,
+                  });
+                }}
+                id="backup-mode"
+              />
+              <Label htmlFor="backup-mode" className="text-sm font-medium">
+                Enable Backup
+              </Label>
+            </div>
+            <Select
+              value={backupInterval.toString()}
+              onValueChange={(value) => {
+                setBackupInterval(parseInt(value));
+                toast({
+                  title: "Backup Interval Updated",
+                  description: `Backup interval set to ${
+                    parseInt(value) / 60000
+                  } minutes`,
+                });
+              }}
+              disabled={!backupEnabled}
+            >
+              <SelectTrigger className="w-[180px] text-sm">
+                <SelectValue placeholder="Select interval" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="60000">Every 1 minute</SelectItem>
+                <SelectItem value="300000">Every 5 minutes</SelectItem>
+                <SelectItem value="600000">Every 10 minutes</SelectItem>
+                <SelectItem value="1800000">Every 30 minutes</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <Label className="text-sm font-medium text-gray-700 text-center">
           Status Control
         </Label>
