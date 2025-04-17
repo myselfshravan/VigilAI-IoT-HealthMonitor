@@ -42,14 +42,14 @@ interface FirebaseData {
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyACyiB2f-Sl8fbez4sjwBxJwn-eGadnXcg",
-  authDomain: "auth-44578.firebaseapp.com",
+  apiKey: "AIzaSyAnDdhpJcWGfkHE9YAkFYEULRb8uBuCcIc",
+  authDomain: "major-project-1d78c.firebaseapp.com",
   databaseURL: "https://major-project-1d78c-default-rtdb.firebaseio.com",
-  projectId: "auth-44578",
-  storageBucket: "auth-44578.appspot.com",
-  messagingSenderId: "595971213871",
-  appId: "1:595971213871:web:432717a56846feb84a14da",
-  measurementId: "G-BJWWD8H4BX"
+  projectId: "major-project-1d78c",
+  storageBucket: "major-project-1d78c.firebasestorage.app",
+  messagingSenderId: "999324211490",
+  appId: "1:999324211490:web:0b8cae75dc334f30d8ed7b",
+  measurementId: "G-6DZY6F54G5"
 };
 
 // Initialize Firebase
