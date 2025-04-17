@@ -44,7 +44,7 @@ interface FirebaseData {
 const firebaseConfig = {
   apiKey: "AIzaSyACyiB2f-Sl8fbez4sjwBxJwn-eGadnXcg",
   authDomain: "auth-44578.firebaseapp.com",
-  databaseURL: "https://auth-44578-default-rtdb.firebaseio.com",
+  databaseURL: "https://major-project-1d78c-default-rtdb.firebaseio.com",
   projectId: "auth-44578",
   storageBucket: "auth-44578.appspot.com",
   messagingSenderId: "595971213871",

@@ -123,7 +123,7 @@ const ChartControls: React.FC<ChartControlsProps> = ({
 
   const handleStatusChange = (value: string) => {
     if (value) {
-      fetch("https://auth-44578-default-rtdb.firebaseio.com/.json", {
+      fetch("https://major-project-1d78c-default-rtdb.firebaseio.com/.json", {
         method: "PATCH",
         body: JSON.stringify({ STATUS: value }),
         headers: {
