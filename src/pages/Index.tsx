@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { MockDataProvider } from "@/components/MockDataProvider";
+import heartbeatGif from "@/assets/heartbeat.gif";
 import StreamingChart from "@/components/StreamingChart";
 import ChartControls from "@/components/ChartControls";
 import SensorData from "@/components/SensorData";
@@ -25,7 +26,11 @@ const VitalCard = ({
     <Card className="h-full transition-transform duration-300 hover:scale-105">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground animate-pulse" />
+        {title === "Heart Rate" ? (
+          <img src={heartbeatGif} alt="heartbeat" className="h-5 w-5" />
+        ) : (
+          <Icon className="h-4 w-4 text-muted-foreground animate-pulse" />
+        )}
       </CardHeader>
       <CardContent>
         <div className="text-xl font-bold transition-all duration-500">
