@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useMockData, HealthData } from "@/components/MockDataProvider";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,20 +18,34 @@ interface Message {
 
 const STORAGE_KEY = "medical-chat-history";
 
-const getRecentContext = (messages: Message[]) => {
+const getRecentContext = (messages: Message[], sensorData: HealthData[]) => {
   // Get last 3 pairs (6 messages) for context
   const contextMessages = messages.slice(-6);
+
+  // Format current sensor readings
+  const currentReadings =
+    sensorData.length > 0 ? sensorData[sensorData.length - 1] : null;
+  const sensorContext = currentReadings
+    ? `Current vital signs:
+     - Heart Rate: ${currentReadings.BPM} BPM
+     - Blood Oxygen (SpO2): ${currentReadings.SPO2}%
+     - Body Temperature: ${currentReadings.Temp}°C
+     - Blood Pressure: ${currentReadings.Pressure} mmHg`
+    : "";
+
   return [
     {
       role: "system",
-      content:
-        "You are a knowledgeable and helpful medical assistant. Provide accurate, helpful information while being clear that you are not a replacement for professional medical advice.",
+      content: `You are a knowledgeable and helpful medical assistant. Provide accurate, helpful information while being clear that you are not a replacement for professional medical advice.
+         Below is the sensor context and give it to the user ONLY if they ask for it. --->
+         ${sensorContext}`,
     },
     ...contextMessages.map(({ role, content }) => ({ role, content })),
   ];
 };
 
 export default function Chat() {
+  const { data: sensorData } = useMockData();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -100,7 +115,7 @@ export default function Chat() {
           body: JSON.stringify({
             model: "llama-3.1-8b-instant",
             messages: [
-              ...getRecentContext(messages),
+              ...getRecentContext(messages, sensorData),
               { role: "user", content: userMessage.content },
             ],
           }),
