@@ -9,11 +9,19 @@ import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
 import { Home } from "lucide-react";
 
+interface ResponseMetrics {
+  total_time: number;
+  queue_time: number;
+  prompt_time: number;
+  completion_time: number;
+}
+
 interface Message {
   id: string;
   content: string;
   role: "user" | "assistant";
   timestamp: Date;
+  metrics?: ResponseMetrics;
 }
 
 const STORAGE_KEY = "medical-chat-history";
@@ -37,7 +45,7 @@ const getRecentContext = (messages: Message[], sensorData: HealthData[]) => {
     {
       role: "system",
       content: `You are a knowledgeable and helpful medical assistant. Provide accurate, helpful information while being clear that you are not a replacement for professional medical advice.
-         Below is the sensor context and give it to the user ONLY if they ask for it. --->
+         Below is the context and give it to the user ONLY if they ask for it. --->
          ${sensorContext}`,
     },
     ...contextMessages.map(({ role, content }) => ({ role, content })),
@@ -132,6 +140,12 @@ export default function Chat() {
         content: data.choices[0].message.content,
         role: "assistant",
         timestamp: new Date(),
+        metrics: {
+          total_time: data.usage.total_time,
+          queue_time: data.usage.queue_time,
+          prompt_time: data.usage.prompt_time,
+          completion_time: data.usage.completion_time,
+        },
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -183,9 +197,16 @@ export default function Chat() {
                   )}
                 >
                   <p className="text-sm">{message.content}</p>
-                  <span className="text-xs opacity-50">
-                    {message.timestamp.toLocaleTimeString()}
-                  </span>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-xs opacity-50">
+                      {message.timestamp.toLocaleTimeString()}
+                    </span>
+                    {message.role === "assistant" && message.metrics && (
+                      <span className="text-xs opacity-50 ml-2">
+                        {message.metrics.total_time.toFixed(2)}s
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -204,11 +225,11 @@ export default function Chat() {
           </div>
         </ScrollArea>
 
-        <form
-          onSubmit={sendMessage}
-          className="border-t p-4 sticky bottom-0 bg-background"
-        >
-          <div className="flex space-x-2 px-2">
+        <div className="sticky bottom-0 border-t bg-background">
+          <form
+            onSubmit={sendMessage}
+            className="flex items-center gap-2 p-3 justify-end"
+          >
             <Input
               ref={inputRef}
               value={input}
@@ -216,16 +237,18 @@ export default function Chat() {
               placeholder="Type your medical query here..."
               disabled={isLoading}
               autoFocus
+              className="flex-1"
             />
             <Button
               type="submit"
               disabled={isLoading || !input.trim()}
               onClick={() => setTimeout(() => inputRef.current?.focus(), 0)}
+              className="shrink-0"
             >
               Send
             </Button>
-          </div>
-        </form>
+          </form>
+        </div>
       </Card>
     </div>
   );

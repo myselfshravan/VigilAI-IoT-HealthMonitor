@@ -9,7 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useMockData } from "@/components/MockDataProvider";
-import { Heart, Droplets, Thermometer, Gauge, AlertTriangle } from "lucide-react";
+import { Heart, Droplets, Thermometer, Gauge, AlertTriangle, Info, MessageSquare } from "lucide-react";
 
 // VitalCard component to display latest health metrics
 const VitalCard = ({
@@ -128,17 +128,25 @@ const Index = () => {
       <header className="bg-primary text-primary-foreground p-4 shadow-md">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div>
-            <h1 className="text-xl font-bold">Health Monitoring Dashboard</h1>
+            <h1 className="text-lg font-bold">Health Monitoring System</h1>
             <p className="text-sm opacity-80">
               Real-time vital signs visualization
             </p>
           </div>
-          <Link 
-            to="/about" 
-            className="px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
-          >
-            About
-          </Link>
+          <div className="flex gap-2">
+            <Link 
+              to="/chat" 
+              className="px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
+            >
+              {isMobile ? <MessageSquare className="h-5 w-5" /> : "Chat"}
+            </Link>
+            <Link 
+              to="/about" 
+              className="px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
+            >
+              {isMobile ? <Info className="h-5 w-5" /> : "About"}
+            </Link>
+          </div>
         </div>
       </header>
 
