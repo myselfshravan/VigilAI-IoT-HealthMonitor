@@ -4,6 +4,7 @@ import React, {
   useState,
   useEffect,
   useRef,
+  useCallback,
   ReactNode,
 } from "react";
 import { initializeApp } from "firebase/app";
@@ -196,7 +197,7 @@ export const MockDataProvider: React.FC<MockDataProviderProps> = ({
   };
 
   // Function to backup data to Firestore
-  const backupToFirestore = async (dataToBackup: HealthData[]) => {
+  const backupToFirestore = useCallback(async (dataToBackup: HealthData[]) => {
     try {
       // Check if we have data to backup
       if (!dataToBackup.length) {
@@ -281,7 +282,7 @@ export const MockDataProvider: React.FC<MockDataProviderProps> = ({
       // Temporarily disable backup on error to prevent rapid retries
       setBackupEnabled(false);
     }
-  };
+  }, [setBackupEnabled, setLastBackupTime]);
 
   // Function to check if it's time for the next backup
   const shouldBackup = useRef<boolean>(true);
@@ -337,7 +338,7 @@ export const MockDataProvider: React.FC<MockDataProviderProps> = ({
         clearTimeout(backupTimeoutRef.current);
       }
     };
-  }, [backupEnabled, backupInterval]);
+  }, [backupEnabled, backupInterval, data, backupToFirestore]);
 
   // Keep the ref updated with latest data
   useEffect(() => {
