@@ -36,7 +36,7 @@ interface FirebaseData {
     Y: number;
     Z: number;
   };
-  Alert: string | null;
+  Alert: number;
   STATUS: string;
 }
 
@@ -49,7 +49,7 @@ const firebaseConfig = {
   storageBucket: "major-project-1d78c.firebasestorage.app",
   messagingSenderId: "999324211490",
   appId: "1:999324211490:web:0b8cae75dc334f30d8ed7b",
-  measurementId: "G-6DZY6F54G5"
+  measurementId: "G-6DZY6F54G5",
 };
 
 // Initialize Firebase
@@ -58,12 +58,14 @@ const database = getDatabase(app);
 
 // Initialize Firestore with persistence
 const firestore = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
 });
 
 // Enable Firestore debug mode in development
-if (process.env.NODE_ENV === 'development') {
-  console.log('Firestore debug mode enabled');
+if (process.env.NODE_ENV === "development") {
+  console.log("Firestore debug mode enabled");
 }
 
 // Define our health monitoring data structure
@@ -80,7 +82,7 @@ export interface HealthData {
     Y: number;
     Z: number;
   };
-  Alert: string | null;
+  fallalert: number;
   STATUS: string;
   id: string;
 }
@@ -123,9 +125,6 @@ const createHealthData = (snapshot: DataSnapshot): HealthData => {
   const now = Date.now();
   const val = (snapshot.val() || {}) as Partial<FirebaseData>;
 
-  // Check for fall condition
-  const isYAxisAbnormal = val.Compass?.Y > 3 || val.Compass?.Y < 1;
-
   return {
     timestamp: now,
     BPM: val.BPM || 80,
@@ -139,7 +138,7 @@ const createHealthData = (snapshot: DataSnapshot): HealthData => {
       Y: val.Compass?.Y || 2,
       Z: val.Compass?.Z || 9.8,
     },
-    Alert: isYAxisAbnormal ? "Person Falling!" : val.Alert || null,
+    fallalert: typeof val.Alert === "number" ? val.Alert : 0,
     STATUS: val.STATUS || "1",
     id: crypto.randomUUID(),
   };
@@ -193,7 +192,7 @@ export const MockDataProvider: React.FC<MockDataProviderProps> = ({
   };
 
   const toggleBackup = () => {
-    setBackupEnabled(prev => !prev);
+    setBackupEnabled((prev) => !prev);
   };
 
   // Function to backup data to Firestore
@@ -201,13 +200,13 @@ export const MockDataProvider: React.FC<MockDataProviderProps> = ({
     try {
       // Check if we have data to backup
       if (!dataToBackup.length) {
-        console.log('No data to backup');
+        console.log("No data to backup");
         return;
       }
 
-      console.log('Starting Firestore backup...', {
+      console.log("Starting Firestore backup...", {
         dataLength: dataToBackup.length,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       // Create a smaller version of the data for backup
@@ -219,61 +218,62 @@ export const MockDataProvider: React.FC<MockDataProviderProps> = ({
           Temp: dataToBackup[dataToBackup.length - 1].Temp,
           Pressure: dataToBackup[dataToBackup.length - 1].Pressure,
         },
-        dataPoints: dataToBackup.map(item => ({
+        dataPoints: dataToBackup.map((item) => ({
           timestamp: item.timestamp,
           BPM: item.BPM,
           SPO2: item.SPO2,
           Temp: item.Temp,
           Pressure: item.Pressure,
-        }))
+        })),
       };
 
       // Try to access and write to the collection
-      const backupCollection = collection(firestore, 'sensorDataBackups');
+      const backupCollection = collection(firestore, "sensorDataBackups");
       const docRef = await addDoc(backupCollection, backupData);
 
-      console.log('Backup successful:', {
+      console.log("Backup successful:", {
         documentId: docRef.id,
         timestamp: new Date().toISOString(),
-        dataPointsCount: dataToBackup.length
+        dataPointsCount: dataToBackup.length,
       });
 
       setLastBackupTime(Date.now());
-      
+
       // Update UI with success status
-      if (typeof window !== 'undefined') {
-        const event = new CustomEvent('backupStatus', {
+      if (typeof window !== "undefined") {
+        const event = new CustomEvent("backupStatus", {
           detail: {
-            type: 'success',
-            title: 'Backup Successful',
-            description: `Backed up ${dataToBackup.length} data points`
-          }
+            type: "success",
+            title: "Backup Successful",
+            description: `Backed up ${dataToBackup.length} data points`,
+          },
         });
         window.dispatchEvent(event);
       }
     } catch (error) {
-      console.error('Error backing up to Firestore:', error);
+      console.error("Error backing up to Firestore:", error);
       if (error instanceof Error) {
         console.error({
           name: error.name,
           message: error.message,
           stack: error.stack,
-          firestoreInstance: !!firestore
+          firestoreInstance: !!firestore,
         });
       }
 
       // Update UI with error status
-      if (typeof window !== 'undefined') {
-        const event = new CustomEvent('backupStatus', {
+      if (typeof window !== "undefined") {
+        const event = new CustomEvent("backupStatus", {
           detail: {
-            type: 'error',
-            title: 'Backup Failed',
-            description: error instanceof Error ? error.message : 'Unknown error occurred',
+            type: "error",
+            title: "Backup Failed",
+            description:
+              error instanceof Error ? error.message : "Unknown error occurred",
             action: {
-              label: 'Try Again',
-              onClick: () => backupToFirestore(dataToBackup)
-            }
-          }
+              label: "Try Again",
+              onClick: () => backupToFirestore(dataToBackup),
+            },
+          },
         });
         window.dispatchEvent(event);
       }
@@ -290,7 +290,7 @@ export const MockDataProvider: React.FC<MockDataProviderProps> = ({
   // Effect for managing backup state
   useEffect(() => {
     if (!backupEnabled) {
-      console.log('Backup disabled');
+      console.log("Backup disabled");
       if (backupTimeoutRef.current) {
         clearTimeout(backupTimeoutRef.current);
       }
@@ -298,22 +298,23 @@ export const MockDataProvider: React.FC<MockDataProviderProps> = ({
     }
 
     // Validate backup interval
-    if (backupInterval < 60000) {  // Minimum 1 minute
-      console.warn('Backup interval too short, setting to 1 minute');
+    if (backupInterval < 60000) {
+      // Minimum 1 minute
+      console.warn("Backup interval too short, setting to 1 minute");
       setBackupInterval(60000);
       return;
     }
 
-    console.log('Setting up backup interval:', {
+    console.log("Setting up backup interval:", {
       intervalMs: backupInterval,
-      enabled: backupEnabled
+      enabled: backupEnabled,
     });
 
     const scheduleNextBackup = () => {
       shouldBackup.current = true;
       backupTimeoutRef.current = setTimeout(async () => {
         if (latestDataRef.current.length > 0) {
-          console.log('Performing scheduled backup');
+          console.log("Performing scheduled backup");
           await backupToFirestore(latestDataRef.current);
         }
         scheduleNextBackup();
@@ -325,13 +326,13 @@ export const MockDataProvider: React.FC<MockDataProviderProps> = ({
 
     // Perform initial backup
     if (data.length > 0 && shouldBackup.current) {
-      console.log('Performing initial backup');
+      console.log("Performing initial backup");
       backupToFirestore(data);
       shouldBackup.current = false;
     }
 
     return () => {
-      console.log('Cleaning up backup interval');
+      console.log("Cleaning up backup interval");
       if (backupTimeoutRef.current) {
         clearTimeout(backupTimeoutRef.current);
       }

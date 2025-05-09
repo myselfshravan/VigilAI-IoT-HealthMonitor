@@ -118,7 +118,7 @@ const ChartControls: React.FC<ChartControlsProps> = ({
   }, [toast]);
 
   // Get the latest alert if any
-  const latestAlert = data.length > 0 ? data[data.length - 1].Alert : null;
+  const latestAlert = data.length > 0 ? data[data.length - 1].fallalert : null;
   const currentStatus = data.length > 0 ? data[data.length - 1].STATUS : "1";
 
   const handleStatusChange = (value: string) => {

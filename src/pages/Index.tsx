@@ -7,8 +7,9 @@ import ChartControls from "@/components/ChartControls";
 import SensorData from "@/components/SensorData";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useMockData } from "@/components/MockDataProvider";
-import { Heart, Droplets, Thermometer, Gauge } from "lucide-react";
+import { Heart, Droplets, Thermometer, Gauge, AlertTriangle } from "lucide-react";
 
 // VitalCard component to display latest health metrics
 const VitalCard = ({
@@ -56,6 +57,16 @@ const MonitoringDashboard = () => {
 
   return (
     <div className={`space-y-6 ${isMobile ? "px-0" : "px-4"}`}>
+      {latestData && latestData.fallalert === 1 && (
+        <Alert variant="destructive" className="animate-pulse">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Fall Detected!</AlertTitle>
+          <AlertDescription>
+            A potential fall has been detected. Please check on the person immediately.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {latestData && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <VitalCard
