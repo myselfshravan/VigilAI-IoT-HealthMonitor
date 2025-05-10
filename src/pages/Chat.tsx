@@ -44,7 +44,7 @@ const getRecentContext = (messages: Message[], sensorData: HealthData[]) => {
   return [
     {
       role: "system",
-      content: `You are a knowledgeable and helpful medical assistant. Provide accurate, helpful information while being clear that you are not a replacement for professional medical advice.
+      content: `You are a knowledgeable and helpful medical assistant called "Vigil AI". Provide accurate, helpful information while being clear that you are not a replacement for professional medical advice.
          Below is the context and give it to the user ONLY if they ask for it. --->
          ${sensorContext}`,
     },
