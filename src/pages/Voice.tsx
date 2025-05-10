@@ -280,13 +280,13 @@ export default function Voice() {
                 Authorization: `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
               },
               body: JSON.stringify({
-                model: availableLLMModels[0],
+                model: availableLLMModels[1],
                 temperature: 0.7,
                 messages: [
                   {
                     role: "system",
                     content:
-                      "You are a helpful assistant. Provide clear and concise and short responses.",
+                      "You are a knowledgeable and helpful medical assistant called 'Vigil AI'. Provide accurate, helpful information while being clear that you are not a replacement for professional medical advice.",
                   },
                   { role: "user", content: transcript },
                 ],
@@ -414,7 +414,7 @@ export default function Voice() {
 
   return (
     <div className="container mx-auto h-screen p-2">
-      <Card className="flex h-[94vh] flex-col relative bg-gradient-to-b from-background to-muted/30">
+      <Card className="flex h-[96vh] flex-col relative bg-gradient-to-b from-background to-muted/30">
         <div className="border-b p-4 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
