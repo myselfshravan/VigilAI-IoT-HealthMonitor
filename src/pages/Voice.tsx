@@ -1,4 +1,10 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useLayoutEffect,
+} from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import {
@@ -15,35 +21,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
-import { Home, Mic, Square, Trash2 } from "lucide-react";
+import { Home, Mic, Square, Trash2, MessageSquare } from "lucide-react";
 
 interface VoiceState {
-  mode: "manual" | "realtime";
   isRecording: boolean;
   isProcessing: boolean;
+  isPlaying: boolean;
   transcript: string;
   response: string;
   audioUrl: string | null;
-  isMuted: boolean;
-  isPlaying: boolean;
-}
-
-interface VADSettings {
-  noiseThreshold: {
-    low: { label: "Low Sensitivity"; value: -50 };
-    medium: { label: "Medium Sensitivity"; value: -35 };
-    high: { label: "High Sensitivity"; value: -20 };
-  };
-  silenceTimeout: {
-    short: { label: "Quick Response"; value: 500 };
-    medium: { label: "Normal"; value: 1000 };
-    long: { label: "Relaxed"; value: 2000 };
-  };
-}
-
-interface VADState {
-  selectedNoiseThreshold: keyof VADSettings["noiseThreshold"];
-  selectedSilenceTimeout: keyof VADSettings["silenceTimeout"];
 }
 
 interface AudioMessage {
@@ -58,146 +44,60 @@ interface AudioPlayer {
 }
 
 const STORAGE_KEY = "voice-interaction-history";
-const SETTINGS_STORAGE_KEY = "voice-settings";
 
-const VAD_SETTINGS: VADSettings = {
-  noiseThreshold: {
-    low: { label: "Low Sensitivity", value: -50 },
-    medium: { label: "Medium Sensitivity", value: -35 },
-    high: { label: "High Sensitivity", value: -20 },
-  },
-  silenceTimeout: {
-    short: { label: "Quick Response", value: 500 },
-    medium: { label: "Normal", value: 1000 },
-    long: { label: "Relaxed", value: 2000 },
-  },
-};
+function logAudioBlobInfo(blob: Blob): void {
+  const bytes: number = blob.size;
+  const kbps: number = 128; // bitrate in kilobits/sec
+  const bytesPerSecond: number = (kbps * 1000) / 8;
+
+  const formatBytes = (b: number): string => {
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(2)} KB`;
+    return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const estimatedDuration: string = (bytes / bytesPerSecond).toFixed(2);
+
+  console.log("🎙️ Audio input Info:");
+  console.log("- Blob size:", formatBytes(bytes));
+  console.log("- Estimated duration:", estimatedDuration, "seconds");
+}
+
+function logAudioFormatInfo(audioBuffer: ArrayBuffer): void {
+  const audioSizeKB = (audioBuffer.byteLength / 1024).toFixed(2);
+
+  console.log("🔊 Speech Data Generated");
+  console.log(`Size: ${audioSizeKB} KB`);
+}
 
 export default function Voice() {
   const [state, setState] = useState<VoiceState>({
-    mode: "manual",
     isRecording: false,
     isProcessing: false,
+    isPlaying: false,
     transcript: "",
     response: "",
     audioUrl: null,
-    isMuted: false,
-    isPlaying: false,
-  });
-
-  const minRecordingLength = useRef<number>(500); // Minimum 500ms of audio
-  const startTime = useRef<number>(0);
-
-  const [currentDb, setCurrentDb] = useState<number>(-100);
-  const [vadSettings, setVadSettings] = useState<VADState>({
-    selectedNoiseThreshold: "medium",
-    selectedSilenceTimeout: "medium",
   });
 
   const [messages, setMessages] = useState<AudioMessage[]>([]);
   const [audioUrls, setAudioUrls] = useState<AudioPlayer>({});
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
-  const analyserNode = useRef<AnalyserNode | null>(null);
-  const audioContext = useRef<AudioContext | null>(null);
-  const vadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const availableSTTModels = [
+    "whisper-large-v3-turbo",
+    "distil-whisper-large-v3-en",
+    "whisper-large-v3",
+  ];
+  const availableLLMModels = [
+    "gemma2-9b-it",
+    "llama3-8b-8192",
+    "llama-3.1-8b-instant",
+  ];
+  const availableVoices = ["Arista-PlayAI", "Celeste-PlayAI", "Gail-PlayAI"];
+
   const { toast } = useToast();
-
-  // Load settings from localStorage
-  useEffect(() => {
-    const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      setVadSettings(settings);
-    }
-  }, []);
-
-  // Save settings to localStorage
-  useEffect(() => {
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(vadSettings));
-  }, [vadSettings]);
-
-  const detectSilence = useCallback(
-    (audioData: Float32Array) => {
-      const rms = Math.sqrt(
-        audioData.reduce((sum, value) => sum + value * value, 0) /
-          audioData.length
-      );
-      const db = 20 * Math.log10(rms);
-
-      // Update current dB level
-      setCurrentDb(db);
-
-      const threshold =
-        VAD_SETTINGS.noiseThreshold[vadSettings.selectedNoiseThreshold].value;
-      return db < threshold;
-    },
-    [vadSettings]
-  );
-
-  const processAudioChunk = useCallback(() => {
-    if (!analyserNode.current || state.isMuted || state.isPlaying) return;
-
-    const dataArray = new Float32Array(analyserNode.current.frequencyBinCount);
-    analyserNode.current.getFloatTimeDomainData(dataArray);
-
-    const isSilent = detectSilence(dataArray);
-
-    if (!isSilent && !state.isRecording) {
-      // Start recording when voice detected
-      startRecording();
-    } else if (isSilent && state.isRecording) {
-      // Schedule stop after silence timeout
-      if (vadTimeoutRef.current) clearTimeout(vadTimeoutRef.current);
-      vadTimeoutRef.current = setTimeout(() => {
-        stopRecording();
-      }, VAD_SETTINGS.silenceTimeout[vadSettings.selectedSilenceTimeout].value);
-    }
-  }, [
-    state.isRecording,
-    state.isMuted,
-    state.isPlaying,
-    vadSettings,
-    detectSilence,
-  ]);
-
-  // Setup realtime audio processing
-  useEffect(() => {
-    if (state.mode === "realtime" && !state.isMuted) {
-      let animationFrame: number;
-
-      const setupAudioProcessing = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-          });
-          audioContext.current = new AudioContext();
-          analyserNode.current = audioContext.current.createAnalyser();
-
-          const source = audioContext.current.createMediaStreamSource(stream);
-          source.connect(analyserNode.current);
-
-          const process = () => {
-            processAudioChunk();
-            animationFrame = requestAnimationFrame(process);
-          };
-
-          process();
-        } catch (error) {
-          console.error("Error setting up audio processing:", error);
-        }
-      };
-
-      setupAudioProcessing();
-
-      return () => {
-        cancelAnimationFrame(animationFrame);
-        if (audioContext.current) {
-          audioContext.current.close();
-        }
-      };
-    }
-  }, [state.mode, state.isMuted, processAudioChunk]);
 
   // Convert ArrayBuffer to base64
   const arrayBufferToBase64 = useCallback((buffer: ArrayBuffer) => {
@@ -227,42 +127,47 @@ export default function Voice() {
     [base64toBlob]
   );
 
-  // Initialize audio URLs and handle cleanup
-  useEffect(() => {
-    // Cleanup old URLs
-    Object.values(audioUrls).forEach((url) => {
+  // Handle audio URL creation and cleanup
+  const getOrCreateAudioUrl = useCallback(
+    (message: AudioMessage): string => {
+      const timestamp = message.timestamp.getTime().toString();
+
+      if (audioUrls[timestamp]) {
+        return audioUrls[timestamp];
+      }
+
       try {
-        URL.revokeObjectURL(url);
+        const blob = base64toBlob(message.audioData);
+        const url = URL.createObjectURL(blob);
+        setAudioUrls((prev) => ({ ...prev, [timestamp]: url }));
+        return url;
       } catch (error) {
-        console.error("Error revoking URL:", error);
+        console.error("Error creating audio URL:", error);
+        return "";
       }
-    });
+    },
+    [base64toBlob, audioUrls]
+  );
 
-    // Create new URLs
-    const newUrls: AudioPlayer = {};
-    messages.forEach((msg) => {
-      if (msg.audioData) {
-        try {
-          const blob = base64toBlob(msg.audioData);
-          newUrls[msg.timestamp.getTime()] = URL.createObjectURL(blob);
-        } catch (error) {
-          console.error("Error creating URL for message:", error);
-        }
-      }
-    });
-    setAudioUrls(newUrls);
-
-    // Cleanup on unmount
+  // Cleanup audio URLs when component unmounts
+  useEffect(() => {
     return () => {
-      Object.values(newUrls).forEach((url) => {
+      Object.values(audioUrls).forEach((url) => {
         try {
           URL.revokeObjectURL(url);
         } catch (error) {
-          console.error("Error cleaning up URL:", error);
+          console.error("Error revoking URL:", error);
         }
       });
     };
-  }, [messages, audioUrls, base64toBlob]);
+  }, []);
+
+  // Update audio URLs when messages change
+  useEffect(() => {
+    messages.forEach((msg) => {
+      getOrCreateAudioUrl(msg);
+    });
+  }, [messages, getOrCreateAudioUrl]);
 
   // Load messages from localStorage on mount
   useEffect(() => {
@@ -282,12 +187,24 @@ export default function Voice() {
     }
   }, []);
 
+  // Auto-scroll to bottom when messages change
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
   // Save messages to localStorage when they change
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
   }, [messages]);
 
   const startRecording = async () => {
+    console.log("Starting recording...");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
@@ -297,14 +214,11 @@ export default function Voice() {
       const supportedType = mimeTypes.find((type) =>
         MediaRecorder.isTypeSupported(type)
       );
-      console.log("Supported audio formats:", supportedType);
       if (!supportedType) {
         throw new Error(
           `No supported audio format found. Tried: ${mimeTypes.join(", ")}`
         );
       }
-
-      console.log("Using audio format:", supportedType);
       mediaRecorder.current = new MediaRecorder(stream, {
         mimeType: supportedType,
         bitsPerSecond: 128000,
@@ -321,16 +235,18 @@ export default function Voice() {
       mediaRecorder.current.onstop = async () => {
         const audioBlob = new Blob(audioChunks.current);
         setState((prev) => ({ ...prev, isProcessing: true }));
+        console.log("Audio recording stopped. Processing...");
+        logAudioBlobInfo(audioBlob);
 
         try {
-          // Step 1: Convert speech to text
+          // Step 1: Convert speech to text - STT
           const formData = new FormData();
           formData.append(
             "file",
             audioBlob,
             `recording.${supportedType.split("/")[1]}`
           );
-          formData.append("model", "whisper-large-v3-turbo");
+          formData.append("model", availableSTTModels[1]);
 
           const transcribeResponse = await fetch(
             "https://api.groq.com/openai/v1/audio/transcriptions",
@@ -352,6 +268,7 @@ export default function Voice() {
 
           const transcribeData = await transcribeResponse.json();
           const transcript = transcribeData.text;
+          console.log("Transcription result:", transcript);
 
           // Step 2: Process with LLM
           const llmResponse = await fetch(
@@ -363,7 +280,8 @@ export default function Voice() {
                 Authorization: `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
               },
               body: JSON.stringify({
-                model: "llama-3.1-8b-instant",
+                model: availableLLMModels[0],
+                temperature: 0.7,
                 messages: [
                   {
                     role: "system",
@@ -385,9 +303,13 @@ export default function Voice() {
 
           const llmData = await llmResponse.json();
           const response = llmData.choices[0].message.content;
-          const availableVoices = ["Arista-PlayAI", "Gail-PlayAI"];
+          console.log(
+            `🧠 LLM responded in: ${llmData.usage.total_time.toFixed(
+              3
+            )} seconds`
+          );
 
-          // Step 3: Convert response to speech
+          // Step 3: Convert response to speech - TTS
           const ttsResponse = await fetch(
             "https://api.groq.com/openai/v1/audio/speech",
             {
@@ -414,16 +336,17 @@ export default function Voice() {
           const audioBuffer = await ttsResponse.arrayBuffer();
           const audioData = arrayBufferToBase64(audioBuffer);
           const timestamp = new Date();
+          logAudioFormatInfo(audioBuffer);
 
           // Update state with all results
-          setState((prev) => ({
-            ...prev,
+          setState({
             isRecording: false,
             isProcessing: false,
+            isPlaying: false,
             transcript,
             response,
             audioUrl: null,
-          }));
+          });
 
           // Create message and update state
           const newMessage: AudioMessage = {
@@ -435,24 +358,16 @@ export default function Voice() {
 
           setMessages((prev) => [...prev, newMessage]);
 
-          // Create and configure audio playback
+          // Create temporary URL for immediate playback
           const blob = base64toBlob(audioData);
           const url = URL.createObjectURL(blob);
           const audio = new Audio(url);
 
-          // Handle audio playback events
-          audio.onplay = () =>
-            setState((prev) => ({ ...prev, isPlaying: true }));
-          audio.onended = () => {
-            URL.revokeObjectURL(url);
-            setState((prev) => ({ ...prev, isPlaying: false }));
-          };
-
-          // Start playback
+          // Clean up URL after playback
+          audio.onended = () => URL.revokeObjectURL(url);
           audio.play().catch((error) => {
             console.error("Error playing audio:", error);
             URL.revokeObjectURL(url);
-            setState((prev) => ({ ...prev, isPlaying: false }));
           });
         } catch (error) {
           console.error(
@@ -472,12 +387,12 @@ export default function Voice() {
             ...prev,
             isRecording: false,
             isProcessing: false,
+            isPlaying: false,
           }));
         }
       };
 
       // Start is now called above with the timeslice parameter
-      startTime.current = Date.now();
       setState((prev) => ({ ...prev, isRecording: true }));
     } catch (error) {
       console.error("Recording error:", error);
@@ -491,355 +406,186 @@ export default function Voice() {
   };
 
   const stopRecording = () => {
-    const recordingDuration = Date.now() - startTime.current;
-
     if (mediaRecorder.current && state.isRecording) {
-      if (recordingDuration >= minRecordingLength.current) {
-        console.log("Recording duration:", recordingDuration, "ms");
-        mediaRecorder.current.stop();
-        mediaRecorder.current.stream
-          .getTracks()
-          .forEach((track) => track.stop());
-      } else {
-        // Discard too short recordings
-        console.log("Recording too short:", recordingDuration, "ms");
-        mediaRecorder.current.stop();
-        mediaRecorder.current.stream
-          .getTracks()
-          .forEach((track) => track.stop());
-        audioChunks.current = [];
-        setState((prev) => ({
-          ...prev,
-          isRecording: false,
-          isProcessing: false,
-        }));
-      }
-    }
-
-    if (vadTimeoutRef.current) {
-      clearTimeout(vadTimeoutRef.current);
-      vadTimeoutRef.current = null;
+      mediaRecorder.current.stop();
+      mediaRecorder.current.stream.getTracks().forEach((track) => track.stop());
     }
   };
 
-  // Cleanup when component unmounts or mode changes
-  useEffect(() => {
-    return () => {
-      if (vadTimeoutRef.current) {
-        clearTimeout(vadTimeoutRef.current);
-      }
-      if (mediaRecorder.current && state.isRecording) {
-        mediaRecorder.current.stop();
-        mediaRecorder.current.stream
-          .getTracks()
-          .forEach((track) => track.stop());
-      }
-      if (audioContext.current) {
-        audioContext.current.close();
-      }
-    };
-  }, [state.mode]);
-
-  // Prevent recording in manual mode while voice detection is active
-  useEffect(() => {
-    if (state.mode === "manual") {
-      if (audioContext.current) {
-        audioContext.current.close();
-        audioContext.current = null;
-      }
-      if (analyserNode.current) {
-        analyserNode.current = null;
-      }
-    }
-  }, [state.mode]);
-
   return (
     <div className="container mx-auto h-screen p-2">
-      <Card className="flex h-[94vh] flex-col relative">
-        <div className="border-b p-4 flex justify-between items-center">
+      <Card className="flex h-[94vh] flex-col relative bg-gradient-to-b from-background to-muted/30">
+        <div className="border-b p-4 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div>
-            <h1 className="text-2xl font-bold">Voice Interaction</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Voice Assistant
+            </h1>
             <p className="text-sm text-muted-foreground">
-              Speak naturally and get voice responses
+              Ask questions, get instant voice responses
             </p>
           </div>
-          <Link
-            to="/"
-            className="p-2 rounded-md border border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
-          >
-            <Home className="h-5 w-5 text-foreground" />
-          </Link>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              asChild
+              className="hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <Link to="/">
+                <Home className="h-5 w-5" />
+              </Link>
+            </Button>
+          </div>
         </div>
 
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-6">
-            {messages.map((msg, index) => (
-              <div key={index} className="space-y-2">
-                <div className="bg-muted p-4 rounded-lg">
-                  <p className="text-sm font-medium">You said:</p>
-                  <p className="text-sm mt-1">{msg.transcript}</p>
+        <ScrollArea className="flex-1 px-4">
+          <div className="space-y-8 py-4 max-w-2xl mx-auto">
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[50vh] text-center space-y-4">
+                <div className="p-4 rounded-full bg-primary/10">
+                  <Mic className="h-8 w-8 text-primary" />
                 </div>
-                <div className="bg-primary/10 p-4 rounded-lg">
-                  <p className="text-sm font-medium">Response:</p>
-                  <p className="text-sm mt-1">{msg.response}</p>
-                  <audio
-                    key={msg.timestamp.getTime()}
-                    src={audioUrls[msg.timestamp.getTime()]}
-                    controls
-                    className="mt-2 w-full"
-                    onPlay={() =>
-                      setState((prev) => ({ ...prev, isPlaying: true }))
-                    }
-                    onPause={() =>
-                      setState((prev) => ({ ...prev, isPlaying: false }))
-                    }
-                    onEnded={() =>
-                      setState((prev) => ({ ...prev, isPlaying: false }))
-                    }
-                  />
+                <div className="space-y-2">
+                  <h2 className="text-xl font-semibold tracking-tight">
+                    Start a Conversation
+                  </h2>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    Press and hold the microphone button to start speaking.
+                    Release when you're done.
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {msg.timestamp.toLocaleString()}
-                </p>
               </div>
-            ))}
+            ) : (
+              messages.map((msg, index) => (
+                <div key={index} className="space-y-3 animate-in fade-in-50">
+                  <div className="bg-muted/50 p-4 rounded-xl border">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 rounded-full bg-primary/10">
+                        <Mic className="h-3.5 w-3.5 text-primary" />
+                      </div>
+                      <p className="text-sm font-medium">Your Message</p>
+                    </div>
+                    <p className="text-sm">{msg.transcript}</p>
+                  </div>
+                  <div className="bg-primary/5 p-4 rounded-xl border">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 rounded-full bg-primary/10">
+                        <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                      </div>
+                      <p className="text-sm font-medium">
+                        Assistant's Response
+                      </p>
+                    </div>
+                    <p className="text-sm mb-3">{msg.response}</p>
+                    <div className="bg-background/80 rounded-lg p-2 border">
+                      <audio
+                        key={msg.timestamp.getTime()}
+                        src={getOrCreateAudioUrl(msg)}
+                        controls
+                        className="w-full h-8"
+                        onPlay={() =>
+                          setState((prev) => ({ ...prev, isPlaying: true }))
+                        }
+                        onPause={() =>
+                          setState((prev) => ({ ...prev, isPlaying: false }))
+                        }
+                        onEnded={() =>
+                          setState((prev) => ({ ...prev, isPlaying: false }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-right">
+                    {msg.timestamp.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+              ))
+            )}
+            <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
 
-        <div className="sticky bottom-0 border-t bg-background p-4">
-          <div className="flex items-center justify-center gap-4">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="absolute left-4"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Clear Voice History</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete your entire voice interaction
-                    history. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => {
-                      localStorage.removeItem(STORAGE_KEY);
-                      setMessages([]);
-                      toast({
-                        title: "History cleared",
-                        description:
-                          "Your voice interaction history has been cleared.",
-                      });
-                    }}
-                  >
-                    Clear History
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <div className="flex flex-col gap-4 w-full max-w-md p-4">
-              <div className="flex flex-col gap-4">
-                <div className="flex justify-between items-center relative">
+        <div className="sticky bottom-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="max-w-2xl mx-auto p-4">
+            <div className="flex items-center justify-between gap-4">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
                   <Button
-                    variant="outline"
-                    onClick={() =>
-                      setState((prev) => ({
-                        ...prev,
-                        mode: prev.mode === "manual" ? "realtime" : "manual",
-                      }))
-                    }
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={messages.length === 0}
+                    className="text-muted-foreground hover:text-foreground"
                   >
-                    Mode: {state.mode === "manual" ? "Manual" : "Realtime"}
+                    <Trash2 className="h-5 w-5" />
                   </Button>
-                  {state.mode === "realtime" && (
-                    <Button
-                      variant={state.isMuted ? "destructive" : "outline"}
-                      onClick={() =>
-                        setState((prev) => ({
-                          ...prev,
-                          isMuted: !prev.isMuted,
-                        }))
-                      }
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear Voice History</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete your entire voice interaction
+                      history. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        localStorage.removeItem(STORAGE_KEY);
+                        setMessages([]);
+                        toast({
+                          title: "History cleared",
+                          description:
+                            "Your voice interaction history has been cleared.",
+                        });
+                      }}
                     >
-                      {state.isMuted ? "Unmute" : "Mute"}
-                    </Button>
+                      Clear History
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <div className="flex-1 flex justify-center">
+                <Button
+                  size="lg"
+                  variant={state.isRecording ? "destructive" : "default"}
+                  onClick={state.isRecording ? stopRecording : startRecording}
+                  disabled={state.isProcessing || state.isPlaying}
+                  className={`h-16 w-16 rounded-full transition-all duration-200 ${
+                    state.isRecording
+                      ? "shadow-lg shadow-destructive/20"
+                      : state.isProcessing
+                      ? "opacity-50"
+                      : "hover:shadow-lg hover:shadow-primary/20"
+                  }`}
+                >
+                  {state.isRecording ? (
+                    <Square className="h-6 w-6 animate-pulse" />
+                  ) : (
+                    <Mic className="h-6 w-6" />
                   )}
-                </div>
+                </Button>
+              </div>
+              <div className="w-10 h-10" /> {/* Spacer for alignment */}
+            </div>
 
-                {state.mode === "realtime" && (
-                  <div className="flex flex-col gap-2 bg-muted/50 p-4 rounded-lg">
-                    <h3 className="text-sm font-medium">
-                      Voice Detection Settings
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm text-muted-foreground">
-                            Current Level:
-                          </p>
-                          <p className="text-sm font-mono">
-                            {currentDb.toFixed(1)} dB
-                          </p>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden relative">
-                          <div
-                            className="h-full bg-green-500 transition-all duration-100"
-                            style={{
-                              width: `${Math.max(
-                                0,
-                                Math.min(100, ((currentDb + 100) / 100) * 100)
-                              )}%`,
-                              backgroundColor:
-                                currentDb <
-                                VAD_SETTINGS.noiseThreshold[
-                                  vadSettings.selectedNoiseThreshold
-                                ].value
-                                  ? "rgb(239 68 68)" // red-500
-                                  : "rgb(34 197 94)", // green-500
-                            }}
-                          />
-                          {/* Threshold line */}
-                          <div
-                            className="absolute top-0 bottom-0 w-0.5 bg-yellow-500"
-                            style={{
-                              left: `${Math.max(
-                                0,
-                                Math.min(
-                                  100,
-                                  ((VAD_SETTINGS.noiseThreshold[
-                                    vadSettings.selectedNoiseThreshold
-                                  ].value +
-                                    100) /
-                                    100) *
-                                    100
-                                )
-                              )}%`,
-                            }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>-100 dB</span>
-                          <span className="border-l h-2"></span>
-                          <span>0 dB</span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">
-                          Sensitivity:
-                        </p>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        {Object.entries(VAD_SETTINGS.noiseThreshold).map(
-                          ([key, { label }]) => (
-                            <label
-                              key={key}
-                              className="flex items-center gap-2 cursor-pointer"
-                            >
-                              <input
-                                type="radio"
-                                name="sensitivity"
-                                checked={
-                                  vadSettings.selectedNoiseThreshold === key
-                                }
-                                onChange={() =>
-                                  setVadSettings((prev) => ({
-                                    ...prev,
-                                    selectedNoiseThreshold:
-                                      key as keyof VADSettings["noiseThreshold"],
-                                  }))
-                                }
-                                className="rounded-full"
-                              />
-                              <span className="text-sm">{label}</span>
-                            </label>
-                          )
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 mt-4">
-                      <p className="text-sm text-muted-foreground">
-                        Silence Timeout:
-                      </p>
-                      <div className="flex flex-col gap-2">
-                        {Object.entries(VAD_SETTINGS.silenceTimeout).map(
-                          ([key, { label }]) => (
-                            <label
-                              key={key}
-                              className="flex items-center gap-2 cursor-pointer"
-                            >
-                              <input
-                                type="radio"
-                                name="silence"
-                                checked={
-                                  vadSettings.selectedSilenceTimeout === key
-                                }
-                                onChange={() =>
-                                  setVadSettings((prev) => ({
-                                    ...prev,
-                                    selectedSilenceTimeout:
-                                      key as keyof VADSettings["silenceTimeout"],
-                                  }))
-                                }
-                                className="rounded-full"
-                              />
-                              <span className="text-sm">{label}</span>
-                            </label>
-                          )
-                        )}
-                      </div>
-                    </div>
+            {state.isProcessing && (
+              <div className="text-center mt-4 animate-in fade-in-0 slide-in-from-bottom-2">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border text-sm text-muted-foreground">
+                  <div className="flex space-x-1">
+                    <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" />
+                    <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:0.2s]" />
+                    <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:0.4s]" />
                   </div>
-                )}
-                {state.mode === "realtime" &&
-                  state.isRecording &&
-                  !state.isMuted && (
-                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
-                      <div className="flex space-x-1">
-                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse [animation-delay:0.2s]" />
-                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse [animation-delay:0.4s]" />
-                      </div>
-                    </div>
-                  )}
+                  <span>Processing your request...</span>
+                </div>
               </div>
-
-              <Button
-                size="lg"
-                variant={state.isRecording ? "destructive" : "default"}
-                onClick={state.isRecording ? stopRecording : startRecording}
-                disabled={state.isProcessing}
-                className="h-16 w-16 rounded-full mx-auto"
-              >
-                {state.isRecording ? (
-                  <Square className="h-6 w-6" />
-                ) : (
-                  <Mic className="h-6 w-6" />
-                )}
-              </Button>
-            </div>
+            )}
           </div>
-          {state.isProcessing && (
-            <div className="text-center mt-2">
-              <div className="flex space-x-2 justify-center">
-                <div className="w-2 h-2 bg-current rounded-full animate-bounce" />
-                <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:0.2s]" />
-                <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:0.4s]" />
-              </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                Processing...
-              </p>
-            </div>
-          )}
         </div>
       </Card>
     </div>

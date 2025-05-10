@@ -9,7 +9,16 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useMockData } from "@/components/MockDataProvider";
-import { Heart, Droplets, Thermometer, Gauge, AlertTriangle, Info, MessageSquare } from "lucide-react";
+import {
+  Heart,
+  Droplets,
+  Thermometer,
+  Gauge,
+  AlertTriangle,
+  Info,
+  MessageSquare,
+  Mic,
+} from "lucide-react";
 
 // VitalCard component to display latest health metrics
 const VitalCard = ({
@@ -62,7 +71,8 @@ const MonitoringDashboard = () => {
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Fall Detected!</AlertTitle>
           <AlertDescription>
-            A potential fall has been detected. Please check on the person immediately.
+            A potential fall has been detected. Please check on the person
+            immediately.
           </AlertDescription>
         </Alert>
       )}
@@ -134,17 +144,23 @@ const Index = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Link 
-              to="/chat" 
+            <Link
+              to="/chat"
               className="px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
             >
               {isMobile ? <MessageSquare className="h-5 w-5" /> : "Chat"}
             </Link>
-            <Link 
-              to="/about" 
+            {/* <Link
+              to="/about"
               className="px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
             >
               {isMobile ? <Info className="h-5 w-5" /> : "About"}
+            </Link> */}
+            <Link
+              to="/voice"
+              className="px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
+            >
+              {isMobile ? <Mic className="h-5 w-5" /> : "Voice"}
             </Link>
           </div>
         </div>
