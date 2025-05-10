@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import About from "./pages/About";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
+import Voice from "./pages/Voice";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/voice" element={<Voice />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
