@@ -5,6 +5,7 @@ import {
   useCallback,
   useLayoutEffect,
 } from "react";
+import { useMockData } from "@/components/MockDataProvider";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import {
@@ -79,7 +80,7 @@ export default function Voice() {
     response: "",
     audioUrl: null,
   });
-
+  const { data: sensorData } = useMockData();
   const [messages, setMessages] = useState<AudioMessage[]>([]);
   const [audioUrls, setAudioUrls] = useState<AudioPlayer>({});
   const mediaRecorder = useRef<MediaRecorder | null>(null);
@@ -271,6 +272,15 @@ export default function Voice() {
           console.log("Transcription result:", transcript);
 
           // Step 2: Process with LLM
+          const currentReadings =
+            sensorData.length > 0 ? sensorData[sensorData.length - 1] : null;
+          const sensorContext = currentReadings
+            ? `Current vital signs of the user: 
+            - Heart Rate: ${currentReadings.BPM} BPM
+            - Blood Oxygen (SpO2): ${currentReadings.SPO2}%
+            - Body Temperature: ${currentReadings.Temp}°C
+            - Blood Pressure: ${currentReadings.Pressure} mmHg`
+            : "";
           const llmResponse = await fetch(
             "https://api.groq.com/openai/v1/chat/completions",
             {
@@ -285,11 +295,12 @@ export default function Voice() {
                 messages: [
                   {
                     role: "system",
-                    content:
-                      "You are a knowledgeable and helpful medical assistant called 'Vigil AI'. Provide accurate, helpful information while being clear that you are not a replacement for professional medical advice.",
+                    content: `You are a knowledgeable and helpful medical assistant called 'Vigil AI'. Provide consise and short answers to user queries.
+                      Use this context if Required: ${sensorContext}`,
                   },
                   { role: "user", content: transcript },
                 ],
+                max_completion_tokens: 200,
               }),
             }
           );
