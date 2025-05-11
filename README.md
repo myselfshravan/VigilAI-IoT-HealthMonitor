@@ -1,73 +1,117 @@
-# Welcome to your Lovable project
+# VigilAI-IoT-HealthMonitor
 
-## Project info
+**VigilAI** is an AI-integrated IoT-based health monitoring system designed specifically for **elderly and physically challenged individuals**. The project aims to provide **real-time health tracking, anomaly detection**, and **proactive alerts** using a combination of sensors, microcontrollers, and lightweight machine learning models.
 
-**URL**: https://lovable.dev/projects/013fc683-49ac-4df7-8251-fc520b2eb185
+---
 
-## How can I edit this code?
+## 🧠 Key Features
 
-There are several ways of editing your application.
+- **Real-Time Health Monitoring**  
+  Tracks vitals including heart rate, SpO2, ECG, body movement, temperature, and location.
 
-**Use Lovable**
+- **Fall Detection**  
+  Detects sudden movements or impact using an ADXL accelerometer.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/013fc683-49ac-4df7-8251-fc520b2eb185) and start prompting.
+- **AI-Powered Anomaly Detection**  
+  Uses ML models to detect unusual patterns and generate alerts.
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Remote Data Access**  
+  Sends sensor data to Firebase Realtime Database for cloud access and remote visualization.
 
-**Use your preferred IDE**
+- **Camera & Audio Integration (Planned)**  
+  Integrating ESP32-CAM for object/fall detection and microphones for cough/sneeze recognition.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Personalized Care Plans (Planned)**  
+  Future implementation of predictive health analytics tailored to user history.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## 🔧 Hardware Used
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+| Component            | Purpose                                  |
+|---------------------|------------------------------------------|
+| ESP32 Dev Board      | Core microcontroller                     |
+| MAX30100             | Heart rate and SpO2 monitoring           |
+| ECG Sensor           | Cardiac activity monitoring              |
+| ADXL Accelerometer   | Fall detection (X, Y, Z axes)            |
+| BMP180               | Temperature & pressure monitoring        |
+| GPS Module           | Real-time location tracking              |
+| Microphone (Planned) | Audio event detection                    |
+| ESP32-CAM (Planned)  | Object/fall detection via video          |
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+---
 
-# Step 3: Install the necessary dependencies.
-npm i
+## ☁️ Cloud & Software Stack
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+- **Firebase Realtime Database** – For real-time sensor data storage and retrieval
+- **MIT App (Basic)** – Reads data from Firebase and displays basic metrics
+- **TensorFlow Lite / Edge Impulse (Planned)** – For deploying ML models on ESP32
+- **Python & ML Scripts** – For anomaly detection and predictive analysis (cloud-based)
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🧪 Current Capabilities
 
-**Use GitHub Codespaces**
+- Real-time data acquisition from sensors
+- Structured JSON-based cloud sync
+- Basic alert triggers for abnormal readings
+- Mobile app integration with Firebase
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 🛠️ Setup Instructions
 
-This project is built with:
+1. **Hardware Connections**
+   - Connect each sensor to the ESP32 as per datasheet specs.
+   - Power via USB or battery module.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+2. **ESP32 Firmware**
+   - Upload the code in `firmware/` directory to ESP32 using Arduino IDE or PlatformIO.
 
-## How can I deploy this project?
+3. **Firebase Setup**
+   - Create a Firebase Realtime Database.
+   - Replace Firebase keys in the firmware config.
 
-Simply open [Lovable](https://lovable.dev/projects/013fc683-49ac-4df7-8251-fc520b2eb185) and click on Share -> Publish.
+4. **MIT App Setup**
+   - Import `.aia` file into MIT App Inventor.
+   - Set Firebase URL and token.
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes it is!
+## 📈 Future Roadmap
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- [ ] Fall detection with ESP32-CAM
+- [ ] Wake word detection (e.g., “Help”) via onboard mic
+- [ ] LLM integration for contextual alerts and health summaries
+- [ ] Predictive analytics and personalized care plans
+- [ ] Secure doctor/caregiver portal
+- [ ] Alert-based SMS/email integration
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+---
+
+## 📚 References & Inspiration
+
+- [Patient Health Monitoring Using IoT and AI (MDPI)](https://www.mdpi.com/2673-4591/66/1/31)
+- [IoT for Healthcare Monitoring (Springer)](https://journalofbigdata.springeropen.com/articles/10.1186/s40537-024-01038-w)
+- [AI-Enabled IoT Health Systems (ScienceDirect)](https://www.sciencedirect.com/science/article/pii/S0045790621004699)
+
+---
+
+## 💡 Unique Selling Points (USPs)
+
+- **Affordable:** Built with low-cost, readily available components.
+- **Customizable:** Easily tailored for individual health needs.
+- **Accessible:** Aimed at those who cannot afford commercial health wearables.
+- **Proactive:** Uses AI to provide not just alerts, but insights and predictions.
+
+---
+
+## 🤝 Contributors
+
+- **Project Lead & Embedded Dev:** [Your Name]
+- **ML Integration & Backend:** [Teammate Name]
+- **Mobile App Dev:** [Teammate Name]
+- **Advisor/Guide:** [Mentor or Professor Name]
+
+---
+
