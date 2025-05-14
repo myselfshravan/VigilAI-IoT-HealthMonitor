@@ -1,24 +1,25 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Thermometer, Gauge, MapPin, Compass, CloudCog } from "lucide-react";
+import {
+  Heart,
+  Thermometer,
+  Gauge,
+  MapPin,
+  Compass,
+  CloudCog,
+} from "lucide-react";
+import { Header } from "@/components/ui/header";
 
 const AboutPage = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="bg-primary text-primary-foreground p-4 shadow-md">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <h1 className="text-xl font-bold">About This Project</h1>
-          <Link 
-            to="/" 
-            className="px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
-          >
-            Back to Dashboard
-          </Link>
-        </div>
-      </header>
+      <Header
+        title="About This Project"
+        subtitle="A real-time health monitoring system"
+      />
 
-      <main className="flex-1 container mx-auto px-4 py-8">
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
         <div className="grid gap-6">
           {/* Project Overview */}
           <Card>
@@ -27,8 +28,10 @@ const AboutPage = () => {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                This is a real-time health monitoring system that collects and visualizes various sensor data.
-                The system uses Firebase Realtime Database for live data streaming and Firestore for data backup.
+                This is a real-time health monitoring system that collects and
+                visualizes various sensor data. The system uses Firebase
+                Realtime Database for live data streaming and Firestore for data
+                backup.
               </p>
             </CardContent>
           </Card>
@@ -129,7 +132,9 @@ const AboutPage = () => {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2 list-disc pl-4">
-                <li>Real-time data streaming with configurable update intervals</li>
+                <li>
+                  Real-time data streaming with configurable update intervals
+                </li>
                 <li>Interactive charts with warning and danger thresholds</li>
                 <li>Automatic fall detection alerts</li>
                 <li>Data backup to Firestore (configurable intervals)</li>

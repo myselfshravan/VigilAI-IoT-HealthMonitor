@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 import { Home, Mic, Square, Trash2, MessageSquare } from "lucide-react";
+import { Header } from "@/components/ui/header";
 
 interface VoiceState {
   isRecording: boolean;
@@ -424,181 +425,164 @@ export default function Voice() {
   };
 
   return (
-    <div className="container mx-auto h-screen p-2">
-      <Card className="flex h-[96vh] flex-col relative bg-gradient-to-b from-background to-muted/30">
-        <div className="border-b p-4 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              Voice Assistant
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Ask questions, get instant voice responses
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              asChild
-              className="hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <Link to="/">
-                <Home className="h-5 w-5" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-
-        <ScrollArea className="flex-1 px-4">
-          <div className="space-y-8 py-4 max-w-2xl mx-auto">
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[50vh] text-center space-y-4">
-                <div className="p-4 rounded-full bg-primary/10">
-                  <Mic className="h-8 w-8 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h2 className="text-xl font-semibold tracking-tight">
-                    Start a Conversation
-                  </h2>
-                  <p className="text-sm text-muted-foreground max-w-sm">
-                    Press and hold the microphone button to start speaking.
-                    Release when you're done.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              messages.map((msg, index) => (
-                <div key={index} className="space-y-3 animate-in fade-in-50">
-                  <div className="bg-muted/50 p-4 rounded-xl border">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-1.5 rounded-full bg-primary/10">
-                        <Mic className="h-3.5 w-3.5 text-primary" />
-                      </div>
-                      <p className="text-sm font-medium">Your Message</p>
-                    </div>
-                    <p className="text-sm">{msg.transcript}</p>
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header
+        title="Vigil AI Voice Assistant"
+        subtitle="Ask questions, get instant voice responses"
+      />
+      <div className="container mx-auto p-2 mt-4 flex-1 max-w-6xl">
+        <Card className="flex h-[86vh] flex-col relative bg-gradient-to-b from-background to-muted/30">
+          <ScrollArea className="flex-1 px-4">
+            <div className="space-y-8 py-4 max-w-2xl mx-auto">
+              {messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-[50vh] text-center space-y-4">
+                  <div className="p-4 rounded-full bg-primary/10">
+                    <Mic className="h-8 w-8 text-primary" />
                   </div>
-                  <div className="bg-primary/5 p-4 rounded-xl border">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-1.5 rounded-full bg-primary/10">
-                        <MessageSquare className="h-3.5 w-3.5 text-primary" />
-                      </div>
-                      <p className="text-sm font-medium">
-                        Assistant's Response
-                      </p>
-                    </div>
-                    <p className="text-sm mb-3">{msg.response}</p>
-                    <div className="bg-background/80 rounded-lg p-2 border">
-                      <audio
-                        key={msg.timestamp.getTime()}
-                        src={getOrCreateAudioUrl(msg)}
-                        controls
-                        className="w-full h-8"
-                        onPlay={() =>
-                          setState((prev) => ({ ...prev, isPlaying: true }))
-                        }
-                        onPause={() =>
-                          setState((prev) => ({ ...prev, isPlaying: false }))
-                        }
-                        onEnded={() =>
-                          setState((prev) => ({ ...prev, isPlaying: false }))
-                        }
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-semibold tracking-tight">
+                      Start a Conversation
+                    </h2>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      Press and hold the microphone button to start speaking.
+                      Release when you're done.
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground text-right">
-                    {msg.timestamp.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
                 </div>
-              ))
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-        </ScrollArea>
-
-        <div className="sticky bottom-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="max-w-2xl mx-auto p-4">
-            <div className="flex items-center justify-between gap-4">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={messages.length === 0}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Clear Voice History</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete your entire voice interaction
-                      history. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => {
-                        localStorage.removeItem(STORAGE_KEY);
-                        setMessages([]);
-                        toast({
-                          title: "History cleared",
-                          description:
-                            "Your voice interaction history has been cleared.",
-                        });
-                      }}
-                    >
-                      Clear History
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              <div className="flex-1 flex justify-center">
-                <Button
-                  size="lg"
-                  variant={state.isRecording ? "destructive" : "default"}
-                  onClick={state.isRecording ? stopRecording : startRecording}
-                  disabled={state.isProcessing || state.isPlaying}
-                  className={`h-16 w-16 rounded-full transition-all duration-200 ${
-                    state.isRecording
-                      ? "shadow-lg shadow-destructive/20"
-                      : state.isProcessing
-                      ? "opacity-50"
-                      : "hover:shadow-lg hover:shadow-primary/20"
-                  }`}
-                >
-                  {state.isRecording ? (
-                    <Square className="h-6 w-6 animate-pulse" />
-                  ) : (
-                    <Mic className="h-6 w-6" />
-                  )}
-                </Button>
-              </div>
-              <div className="w-10 h-10" /> {/* Spacer for alignment */}
+              ) : (
+                messages.map((msg, index) => (
+                  <div key={index} className="space-y-3 animate-in fade-in-50">
+                    <div className="bg-muted/50 p-4 rounded-xl border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="p-1.5 rounded-full bg-primary/10">
+                          <Mic className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <p className="text-sm font-medium">Your Message</p>
+                      </div>
+                      <p className="text-sm">{msg.transcript}</p>
+                    </div>
+                    <div className="bg-primary/5 p-4 rounded-xl border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="p-1.5 rounded-full bg-primary/10">
+                          <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <p className="text-sm font-medium">
+                          Assistant's Response
+                        </p>
+                      </div>
+                      <p className="text-sm mb-3">{msg.response}</p>
+                      <div className="bg-background/80 rounded-lg p-2 border">
+                        <audio
+                          key={msg.timestamp.getTime()}
+                          src={getOrCreateAudioUrl(msg)}
+                          controls
+                          className="w-full h-8"
+                          onPlay={() =>
+                            setState((prev) => ({ ...prev, isPlaying: true }))
+                          }
+                          onPause={() =>
+                            setState((prev) => ({ ...prev, isPlaying: false }))
+                          }
+                          onEnded={() =>
+                            setState((prev) => ({ ...prev, isPlaying: false }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-right">
+                      {msg.timestamp.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
             </div>
+          </ScrollArea>
 
-            {state.isProcessing && (
-              <div className="text-center mt-4 animate-in fade-in-0 slide-in-from-bottom-2">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border text-sm text-muted-foreground">
-                  <div className="flex space-x-1">
-                    <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" />
-                    <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:0.2s]" />
-                    <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:0.4s]" />
-                  </div>
-                  <span>Processing your request...</span>
+          <div className="sticky bottom-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="max-w-2xl mx-auto p-4">
+              <div className="flex items-center justify-between gap-4">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={messages.length === 0}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Clear Voice History</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete your entire voice
+                        interaction history. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          localStorage.removeItem(STORAGE_KEY);
+                          setMessages([]);
+                          toast({
+                            title: "History cleared",
+                            description:
+                              "Your voice interaction history has been cleared.",
+                          });
+                        }}
+                      >
+                        Clear History
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <div className="flex-1 flex justify-center">
+                  <Button
+                    size="lg"
+                    variant={state.isRecording ? "destructive" : "default"}
+                    onClick={state.isRecording ? stopRecording : startRecording}
+                    disabled={state.isProcessing || state.isPlaying}
+                    className={`h-16 w-16 rounded-full transition-all duration-200 ${
+                      state.isRecording
+                        ? "shadow-lg shadow-destructive/20"
+                        : state.isProcessing
+                        ? "opacity-50"
+                        : "hover:shadow-lg hover:shadow-primary/20"
+                    }`}
+                  >
+                    {state.isRecording ? (
+                      <Square className="h-6 w-6 animate-pulse" />
+                    ) : (
+                      <Mic className="h-6 w-6" />
+                    )}
+                  </Button>
                 </div>
+                <div className="w-10 h-10" /> {/* Spacer for alignment */}
               </div>
-            )}
+
+              {state.isProcessing && (
+                <div className="text-center mt-4 animate-in fade-in-0 slide-in-from-bottom-2">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border text-sm text-muted-foreground">
+                    <div className="flex space-x-1">
+                      <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" />
+                      <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:0.4s]" />
+                    </div>
+                    <span>Processing your request...</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

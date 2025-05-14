@@ -130,51 +130,19 @@ const MonitoringDashboard = () => {
   );
 };
 
+import { Header } from "@/components/ui/header";
+
 const Index = () => {
   const isMobile = useIsMobile();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="bg-primary text-primary-foreground p-4 shadow-md">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          {/* Brand Section */}
-          <div>
-            <h1 className="text-lg font-bold">
-              VigilAI - Health Monitoring System
-            </h1>
-            <p className="text-sm opacity-80">
-              Real-time vital signs visualization
-            </p>
-          </div>
+      <Header
+        title="VigilAI - Health Monitoring System"
+        subtitle="Real-time vital signs visualization"
+      />
 
-          {/* Navigation Links */}
-          <div className="flex flex-wrap justify-start sm:justify-end gap-2">
-            <Link
-              to="/about"
-              className="flex items-center gap-1 px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
-            >
-              <Info className="h-5 w-5 sm:hidden" />
-              <span className="hidden sm:inline">About</span>
-            </Link>
-            <Link
-              to="/chat"
-              className="flex items-center gap-1 px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
-            >
-              <MessageSquare className="h-5 w-5 sm:hidden" />
-              <span className="hidden sm:inline">Chat</span>
-            </Link>
-            <Link
-              to="/voice"
-              className="flex items-center gap-1 px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
-            >
-              <Mic className="h-5 w-5 sm:hidden" />
-              <span className="hidden sm:inline">Voice</span>
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 p-4 max-w-7xl mx-auto w-full space-y-6">
+      <main className="flex-1 p-4 max-w-6xl mx-auto w-full space-y-6">
         <MockDataProvider>
           <MonitoringDashboard />
         </MockDataProvider>
