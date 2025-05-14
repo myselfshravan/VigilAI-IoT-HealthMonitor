@@ -33,7 +33,7 @@ const VitalCard = ({
   icon: React.ElementType;
 }) => {
   return (
-    <Card className="h-full transition-transform duration-300 hover:scale-105">
+    <Card className="h-full shadow-md">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         {title === "Heart Rate" ? (
@@ -136,31 +136,39 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="bg-primary text-primary-foreground p-4 shadow-md">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Brand Section */}
           <div>
-            <h1 className="text-lg font-bold">Health Monitoring System</h1>
+            <h1 className="text-lg font-bold">
+              VigilAI - Health Monitoring System
+            </h1>
             <p className="text-sm opacity-80">
               Real-time vital signs visualization
             </p>
           </div>
-          <div className="flex gap-2">
+
+          {/* Navigation Links */}
+          <div className="flex flex-wrap justify-start sm:justify-end gap-2">
+            <Link
+              to="/about"
+              className="flex items-center gap-1 px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
+            >
+              <Info className="h-5 w-5 sm:hidden" />
+              <span className="hidden sm:inline">About</span>
+            </Link>
             <Link
               to="/chat"
-              className="px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1 px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
             >
-              {isMobile ? <MessageSquare className="h-5 w-5" /> : "Chat"}
+              <MessageSquare className="h-5 w-5 sm:hidden" />
+              <span className="hidden sm:inline">Chat</span>
             </Link>
-            {/* <Link
-              to="/about"
-              className="px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
-            >
-              {isMobile ? <Info className="h-5 w-5" /> : "About"}
-            </Link> */}
             <Link
               to="/voice"
-              className="px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1 px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
             >
-              {isMobile ? <Mic className="h-5 w-5" /> : "Voice"}
+              <Mic className="h-5 w-5 sm:hidden" />
+              <span className="hidden sm:inline">Voice</span>
             </Link>
           </div>
         </div>
@@ -173,8 +181,8 @@ const Index = () => {
       </main>
 
       <footer className="bg-card p-4 text-center text-sm text-muted-foreground border-t">
-        <p>Smart Health Monitoring System</p>
-        <p>Developed by Shravan</p>
+        <p>Vigil AI - Smart Health Monitoring System</p>
+        <p>Developed by Team: Namratha, Nisha, Chiranth and Shravan</p>
       </footer>
     </div>
   );
