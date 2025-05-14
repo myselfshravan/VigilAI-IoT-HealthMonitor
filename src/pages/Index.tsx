@@ -32,6 +32,12 @@ const VitalCard = ({
   unit: string;
   icon: React.ElementType;
 }) => {
+  const [animationKey, setAnimationKey] = React.useState(0);
+
+  React.useEffect(() => {
+    setAnimationKey((prev) => prev + 1);
+  }, [value]);
+
   return (
     <Card className="h-full shadow-md">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -43,7 +49,28 @@ const VitalCard = ({
         )}
       </CardHeader>
       <CardContent>
-        <div className="text-xl font-bold transition-all duration-500">
+        <style>
+          {`
+            @keyframes highlightValue {
+              0% { 
+                color: inherit;
+              }
+              50% { 
+                color: red;
+              }
+              100% { 
+                color: inherit;
+              }
+            }
+            .highlight-change {
+              animation: highlightValue 1s ease;
+            }
+          `}
+        </style>
+        <div
+          key={animationKey}
+          className="text-xl font-bold p-1 rounded-md highlight-change"
+        >
           {value}
           {unit}
         </div>
