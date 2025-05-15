@@ -1,4 +1,4 @@
-# VigilAI-IoT-HealthMonitor
+# VigilAI-IoT-HealthMonitor RealTime
 
 **VigilAI** is an AI-integrated IoT-based health monitoring system designed specifically for **elderly and physically challenged individuals**. The project aims to provide **real-time health tracking, anomaly detection**, and **proactive alerts** using a combination of sensors, microcontrollers, and lightweight machine learning models.
 
