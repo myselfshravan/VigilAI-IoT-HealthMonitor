@@ -9,6 +9,7 @@ import About from "./pages/About";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
 import Voice from "./pages/Voice";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/voice" element={<Voice />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

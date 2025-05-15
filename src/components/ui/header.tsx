@@ -49,6 +49,17 @@ export function Header({ title, subtitle, showNav = true }: HeaderProps) {
               <Mic className="h-5 w-5 sm:hidden" />
               <span className="hidden sm:inline">Voice</span>
             </Link>
+            <Link
+              to="/profile"
+              className="flex items-center gap-1 px-4 py-2 bg-primary-foreground text-primary rounded-md hover:opacity-90 transition-opacity"
+            >
+              <img
+                src="/placeholder.svg"
+                alt="Profile"
+                className="h-5 w-5 sm:hidden rounded-full"
+              />
+              <span className="hidden sm:inline">Profile</span>
+            </Link>
           </div>
         )}
       </div>
