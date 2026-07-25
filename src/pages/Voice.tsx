@@ -248,7 +248,7 @@ export default function Voice() {
             audioBlob,
             `recording.${supportedType.split("/")[1]}`
           );
-          formData.append("model", availableSTTModels[1]);
+          formData.append("model", availableSTTModels[0]);
 
           const transcribeResponse = await fetch(
             "https://api.groq.com/openai/v1/audio/transcriptions",
