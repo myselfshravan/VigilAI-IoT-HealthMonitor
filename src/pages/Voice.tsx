@@ -331,7 +331,7 @@ export default function Voice() {
                 Authorization: `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
               },
               body: JSON.stringify({
-                model: "playai-tts",
+                model: "canopylabs/orpheus-v1-english",
                 input: response,
                 voice: availableVoices[0],
               }),
