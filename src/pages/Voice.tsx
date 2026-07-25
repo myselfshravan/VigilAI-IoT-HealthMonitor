@@ -94,7 +94,7 @@ export default function Voice() {
   ];
   const availableLLMModels = [
     "gemma2-9b-it",
-    "llama3-8b-8192",
+    "openai/gpt-oss-20b",
     "llama-3.1-8b-instant",
   ];
   const availableVoices = ["Arista-PlayAI", "Celeste-PlayAI", "Gail-PlayAI"];
