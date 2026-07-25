@@ -296,12 +296,12 @@ export default function Voice() {
                 messages: [
                   {
                     role: "system",
-                    content: `You are a knowledgeable and helpful medical assistant called 'Vigil AI'. Provide consise and short answers to user queries.
+                    content: `You are a knowledgeable and helpful medical assistant called 'Vigil AI'. Provide consise and short answers to user queries. Please note: Dont use any spetial characters in your response.
                       Use this context if Required: ${sensorContext}`,
                   },
                   { role: "user", content: transcript },
                 ],
-                max_completion_tokens: 200,
+                max_completion_tokens: 500,
               }),
             }
           );
