@@ -97,7 +97,7 @@ export default function Voice() {
     "openai/gpt-oss-20b",
     "llama-3.1-8b-instant",
   ];
-  const availableVoices = ["Arista-PlayAI", "Celeste-PlayAI", "Gail-PlayAI"];
+  const availableVoices = ["autumn", "diana", "hannah", "austin", "daniel", "troy"];
 
   const { toast } = useToast();
 
