@@ -11,8 +11,8 @@ const Profile = () => {
 
   // Hardcoded user details with real-time location
   const user = {
-    name: "Chiranth",
-    phone: "9945332995",
+    name: "John Doe",
+    phone: "9876543210",
     address: "#24 Jehovah Nissi, Mathikere Extenssion, Bangalore, 560054",
     coordinates: {
       latitude: latestData?.Lat ?? 13.0354, // Fallback to default if no data

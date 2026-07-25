@@ -177,7 +177,7 @@ const Index = () => {
 
       <footer className="bg-card p-4 text-center text-sm text-muted-foreground border-t">
         <p>Vigil AI - Smart Health Monitoring System</p>
-        <p>Developed by Team: Namratha, Nisha, Chiranth and Shravan</p>
+        <p>Developed by Team: Shravan</p>
       </footer>
     </div>
   );
