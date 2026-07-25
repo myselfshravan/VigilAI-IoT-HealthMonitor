@@ -333,7 +333,8 @@ export default function Voice() {
               body: JSON.stringify({
                 model: "canopylabs/orpheus-v1-english",
                 input: response,
-                voice: availableVoices[0],
+                voice: availableVoices[2],
+                response_format: "wav",
               }),
             }
           );
